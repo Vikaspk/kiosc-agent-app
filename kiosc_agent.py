@@ -8,10 +8,25 @@ import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 
+st.set_page_config(page_title="KIOSC Dataset Agent", layout="wide")
 # ---------- Load dataset ----------
 @st.cache_data
 def load_data() -> pd.DataFrame:
-    return pd.read_excel("KIOSC_Cleaned_Merged.xlsx", sheet_name="Sheet1")
+    df = pd.read_excel("KIOSC_Cleaned_Merged.xlsx", sheet_name="Sheet1")
+
+    # Convert any column with 'date' in its name
+    for col in df.columns:
+        if "date" in col.lower():
+            if pd.api.types.is_numeric_dtype(df[col]):
+                df[col] = pd.to_datetime(df[col], unit="d", origin="1899-12-30", errors="coerce")
+            else:
+                df[col] = pd.to_datetime(df[col], errors="coerce")
+
+            # Format to readable DD-MM-YYYY
+            df[col] = df[col].dt.strftime("%d-%m-%Y")
+
+    return df
+
 
 df = load_data()
 
@@ -32,9 +47,9 @@ KEYWORD_TO_COL = {
     "enjoy": "How much did you enjoy the sessions today?",
     "enjoyed": "How much did you enjoy the sessions today?",
     "enjoyment": "How much did you enjoy the sessions today?",
-    "learn": "How much do you think you have learnt today?",
-    "learnt": "How much do you think you have learnt today?",
-    "learning": "How much do you think you have learnt today?"
+    "learn today": "How much do you think you have learnt today?",
+    "learnt today": "How much do you think you have learnt today?",
+    "gain knowledge": "How much do you think you have learnt today?"
 }
 
 def pick_metric_from_query(q: str) -> Optional[str]:
@@ -156,18 +171,22 @@ def answer_with_llm(q: str):
     cols_for_context = [metric] if metric else []
     if "School" in df.columns: cols_for_context.append("School")
     if "Program" in df.columns: cols_for_context.append("Program")
+    if "response_date" in df.columns: cols_for_context.append("response_date")
 
     # Use semantic retrieval instead of naive head()
     context_df = retrieve_relevant_rows(q, k=40)
-    context_text = context_df[cols_for_context].to_string(index=False)
+
+    # Ensure all date columns are formatted as strings
+    for col in context_df.columns:
+        if "date" in col.lower():
+            context_df[col] = pd.to_datetime(context_df[col], errors="coerce").dt.strftime("%d-%m-%Y")
+
+    context_text = context_df[cols_for_context].astype(str).to_string(index=False)
 
     if not context_text.strip():
         context_text = "No data available to answer this question."
 
-    res = qa({
-        "context": context_text,
-        "question": q
-    })
+    res = qa(question=q, context=context_text)
 
     if isinstance(res, dict) and "answer" in res:
         st.write("🤖 **Answer:**", res["answer"])
@@ -177,8 +196,9 @@ def answer_with_llm(q: str):
     with st.expander("Show context sample used"):
         st.code(context_text)
 
-# ---------- Streamlit UI ----------
-st.set_page_config(page_title="KIOSC Dataset Agent", layout="wide")
+
+
+
 st.title(" KIOSC Dataset Agent")
 
 mode = st.radio(
@@ -201,4 +221,4 @@ else:
             st.markdown(make_dataset_summary())
 
         else:
-            answer_with_llm(q)
+            answer_with_llm(q)# 
