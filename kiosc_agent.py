@@ -183,7 +183,7 @@ st.title(" KIOSC Dataset Agent")
 
 mode = st.radio(
     "Choose a mode:",
-    ["Ask (auto)", "Explain dataset", "Make a visual/table"],
+    ["Ask", "Make a visual/table"],
     horizontal=True
 )
 
