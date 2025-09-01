@@ -54,12 +54,23 @@ KEYWORD_TO_COL = {
 
 def pick_metric_from_query(q: str) -> Optional[str]:
     q_low = q.lower()
+
+    # enjoyment/learning mappings
     for kw, col in KEYWORD_TO_COL.items():
         if kw in q_low and col in df.columns:
             return col
+
+    # date-related queries
+    if any(word in q_low for word in ["date", "day", "when"]):
+        if "response_date" in df.columns:
+            return "response_date"
+
+    # default fallback
     if "overall_experience" in df.columns:
         return "overall_experience"
+
     return None
+
 
 # ---------- Dimension helpers ----------
 def pick_dim_from_query(q: str) -> Optional[str]:
@@ -150,20 +161,28 @@ def make_grouped_visual(q: str):
     if dim is None:
         dim = d.columns[0]
 
-    tbl = (
-        d.groupby(dim, dropna=False)[metric]
-        .mean()
-        .sort_values(ascending=False)
-        .to_frame(name=f"avg_{metric}")
-    )
+    if metric == "response_date":
+        # Show the unique dates instead of averaging
+        tbl = d.groupby(dim, dropna=False)[metric].first().to_frame(name="session_date")
+        st.subheader(f"Session dates by {dim}")
+        st.dataframe(tbl)
+    else:
+        # Normal averaging flow
+        tbl = (
+            d.groupby(dim, dropna=False)[metric]
+            .mean()
+            .sort_values(ascending=False)
+            .to_frame(name=f"avg_{metric}")
+        )
 
-    topn = parse_topn(q)
-    if topn:
-        tbl = tbl.head(topn)
+        topn = parse_topn(q)
+        if topn:
+            tbl = tbl.head(topn)
 
-    st.subheader(f"Average {metric} by {dim}")
-    st.dataframe(tbl)
-    st.bar_chart(tbl)
+        st.subheader(f"Average {metric} by {dim}")
+        st.dataframe(tbl)
+        st.bar_chart(tbl)
+
 
 # ---------- QA ----------
 def answer_with_llm(q: str):
