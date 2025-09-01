@@ -61,7 +61,7 @@ def pick_metric_from_query(q: str) -> Optional[str]:
             return col
 
     # date-related queries
-    if any(word in q_low for word in ["date", "day", "when"]):
+    if any(word in q_low for word in ["date", "day", "when","session"]):
         if "response_date" in df.columns:
             return "response_date"
 
@@ -162,8 +162,13 @@ def make_grouped_visual(q: str):
         dim = d.columns[0]
 
     if metric == "response_date":
-        # Show the unique dates instead of averaging
-        tbl = d.groupby(dim, dropna=False)[metric].first().to_frame(name="session_date")
+        # Show all session dates for each school/program
+        tbl = (
+            d.groupby(dim, dropna=False)[metric]
+            .apply(lambda x: ", ".join(sorted(set(x.dropna()))))
+            .to_frame(name="session_dates")
+        )
+
         st.subheader(f"Session dates by {dim}")
         st.dataframe(tbl)
     else:
