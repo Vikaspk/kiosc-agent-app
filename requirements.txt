@@ -3,6 +3,6 @@ pandas
 openpyxl
 transformers==4.41.2
 torch==2.0.1
-sentence-transformers
-scikit-learn
+sentencepiece
+scipy
 -f https://download.pytorch.org/whl/cpu
