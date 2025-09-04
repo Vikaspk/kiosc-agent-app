@@ -1,8 +1,7 @@
-streamlit
-pandas
-openpyxl
+streamlit==1.36.0
+pandas==2.2.2
+openpyxl==3.1.2
 transformers==4.41.2
 torch==2.0.1
-sentencepiece
-scipy
--f https://download.pytorch.org/whl/cpu
+sentence-transformers==2.2.2
+scikit-learn==1.4.2
