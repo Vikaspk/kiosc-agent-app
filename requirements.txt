@@ -2,7 +2,7 @@ streamlit
 pandas
 openpyxl
 transformers==4.41.2
-torch==2.0.1+cpu
+torch==2.0.1
 sentence-transformers
 scikit-learn
 -f https://download.pytorch.org/whl/cpu
